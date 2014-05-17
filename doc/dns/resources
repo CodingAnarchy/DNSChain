@@ -1,0 +1,3 @@
+# Useful Web Resources For DNS Information
+
+http://tools.ietf.org/html/rfc1035  # Documentation on DNS protocol basic types (A, CNAME, etc.) and message formats
