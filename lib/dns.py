@@ -1,6 +1,6 @@
 #!usr/bin/env python
 #
-# DNSChain - Distributed Blockhain-based DNS server and client
+# DNSChain - Distributed Blockchain-based DNS server and client
 # Copyright (C) 2014 mtanous22@gmail.com
 #
 # This program is free software: you can redistribute it and/or modify
@@ -30,14 +30,14 @@ class RecordException(Exception):
 
 
 def verify_domain_valid(dname):
-    # TODO : Verify domain name does not already have associated record
+    # TODO : Verify domain name does not already have associated record in blockchain
     if len(dname) > 255:
         raise RecordException("Domain name exceeds 255 octet maximum limit.")
 
 
-def verify_rdata_valid(rtype, data):
-    if len(data) > RRTYPES[rtype][1] * 8:  # Multiply value by 8 to obtain value in octets
-        raise RecordException("Data is longer than expected length of " + str(RRTYPES[rtype][1]) + " bytes.")
+def verify_rdata_valid(r_type, data):
+    if len(data) > RRTYPES[r_type][1] * 8:  # Multiply value by 8 to obtain value in octets
+        raise RecordException("Data is longer than expected length of " + str(RRTYPES[r_type][1]) + " bytes.")
 
     if rtype == 'A':
         ip_valid = re.search(r'\A\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z', str(data))
@@ -56,8 +56,8 @@ def create_dns_record(domain_name, record_type, ttl, data):
     # Pad domain name out to maximum length of 255 octets
     # Is this padding necessary? Will need to check
     domain_name = domain_name.ljust(255)
-    rdata = bytearray(data)
-    verify_rdata_valid(record_type, rdata)
+    data = bytearray(data)
+    verify_rdata_valid(record_type, data)
 
     # Build byte array construction containing DNS record
     # Start with padded domain name (will just be domain name if padding is not needed)
@@ -99,7 +99,7 @@ def create_dns_record(domain_name, record_type, ttl, data):
         record.append(h)
 
     # Append data
-    for c in rdata:
+    for c in data:
         record.append(c)
 
     return record
@@ -115,14 +115,14 @@ def _to_hex(int_value):
 
 
 def parse_dns_record(drecord):
-    domain = str(drecord[:255]).rstrip()
+    dname = str(drecord[:255]).rstrip()
     type_value = str(drecord[255:257]).encode('hex')
     # class_value = drecord[257:259]  - not needed as will always be 1 for Internet
     ttl_value = str(drecord[259:263]).encode('hex')
     data_length = str(drecord[263:265]).encode('hex')
     data = str(drecord[265:])
 
-    return domain, type_value, ttl_value, data_length, data
+    return dname, type_value, ttl_value, data_length, data
 
 
 # DEBUG SCRIPT
@@ -144,5 +144,3 @@ if __name__ == '__main__':
     print "TTL value: " + ttl_val
     print "Data field length: " + rdlength
     print "Data: " + rdata
-
-
