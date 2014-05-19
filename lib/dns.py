@@ -138,7 +138,7 @@ if __name__ == '__main__':
         print err.msg
         sys.exit()
     print r
-    print "Length of record (in bytes): " + str(len(r))
+    # print "Length of record (in bytes): " + str(len(r))
 
     # domain, rtype, ttl_val, rdlength, rdata = parse_dns_record(r)
     #
