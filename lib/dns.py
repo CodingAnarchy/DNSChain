@@ -17,6 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import re
+from dnslib import DNSRecord, DNSHeader, RR
 
 # Format for types is [type value, max rdlength, format]
 RRTYPES = {'A': [1, 4, 'IPV4']}  # TODO : Add record types when support is added
@@ -39,7 +40,7 @@ def verify_rdata_valid(r_type, data):
     if len(data) > RRTYPES[r_type][1] * 8:  # Multiply value by 8 to obtain value in octets
         raise RecordException("Data is longer than expected length of " + str(RRTYPES[r_type][1]) + " bytes.")
 
-    if rtype == 'A':
+    if r_type == 'A':
         ip_valid = re.search(r'\A\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z', str(data))
         if ip_valid is None:
             raise RecordException("Data for type A record not a valid IPV4 address.")
@@ -53,15 +54,14 @@ def create_dns_record(domain_name, record_type, ttl, data):
     if ttl.bit_length() > 32:
         raise RecordException("TTL value must be representable as a signed 32 bit integer.")
     verify_domain_valid(domain_name)
-    # Pad domain name out to maximum length of 255 octets
-    # Is this padding necessary? Will need to check
-    domain_name = domain_name.ljust(255)
     data = bytearray(data)
     verify_rdata_valid(record_type, data)
 
     # Build byte array construction containing DNS record
-    # Start with padded domain name (will just be domain name if padding is not needed)
+    # Start with domain name ended with period
     record = bytearray(domain_name)
+    record.append('.')
+
 
     # Append record type value
     type_val = RRTYPES[record_type][0]
@@ -115,12 +115,13 @@ def _to_hex(int_value):
 
 
 def parse_dns_record(drecord):
-    dname = str(drecord[:255]).rstrip()
-    type_value = str(drecord[255:257]).encode('hex')
-    # class_value = drecord[257:259]  - not needed as will always be 1 for Internet
-    ttl_value = str(drecord[259:263]).encode('hex')
-    data_length = str(drecord[263:265]).encode('hex')
-    data = str(drecord[265:])
+    end_dname = drecord.find('.')
+    dname = str(drecord[:end_dname]).rstrip()
+    type_value = str(drecord[end_dname:end_dname+2]).encode('hex')
+    # class_value = drecord[end_dname+2:end_dname+4]  - not needed as will always be 1 for Internet
+    ttl_value = str(drecord[end_dname+4:end_dname+8]).encode('hex')
+    data_length = str(drecord[end_dname+8:end_dname+10]).encode('hex')
+    data = str(drecord[end_dname+10:])
 
     return dname, type_value, ttl_value, data_length, data
 
@@ -129,18 +130,20 @@ def parse_dns_record(drecord):
 if __name__ == '__main__':
     import sys
     domain = "codinganarchy.net"
+    ip_addr = '127.0.0.1'
     try:
-        r = create_dns_record(domain, 'A', 0x2400, '127.0.0.1')
+        # r = create_dns_record(domain, 'A', 0x2400, '127.0.0.1')
+        r = RR.fromZone(domain + " IN A " + ip_addr)
     except RecordException as err:
         print err.msg
         sys.exit()
-    # print r
+    print r
     print "Length of record (in bytes): " + str(len(r))
 
-    domain, rtype, ttl_val, rdlength, rdata = parse_dns_record(r)
-
-    print "Domain name: " + domain
-    print "Type value: " + rtype
-    print "TTL value: " + ttl_val
-    print "Data field length: " + rdlength
-    print "Data: " + rdata
+    # domain, rtype, ttl_val, rdlength, rdata = parse_dns_record(r)
+    #
+    # print "Domain name: " + domain
+    # print "Type value: " + rtype
+    # print "TTL value: " + ttl_val
+    # print "Data field length: " + rdlength
+    # print "Data: " + rdata
