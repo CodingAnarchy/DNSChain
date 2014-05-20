@@ -17,7 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from dnslib import DNSRecord, DNSHeader, RR
+from dnslib import DNSRecord, DNSQuestion, DNSHeader, RR
 
 # Format for types is [type value, max rdlength, format]
 RRTYPES = {'A': [1, 4, 'IPV4']}  # TODO : Add record types when support is added
